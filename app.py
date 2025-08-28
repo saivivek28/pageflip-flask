@@ -397,4 +397,4 @@ def get_admin_stats():
         return jsonify({'error': 'Failed to retrieve stats'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=port)
