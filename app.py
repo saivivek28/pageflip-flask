@@ -1,3 +1,4 @@
+from datetime import timedelta
 from flask import Flask, request, jsonify
 from flask_bcrypt import Bcrypt
 from pymongo import MongoClient
@@ -110,7 +111,10 @@ def admin_login():
     if not bcrypt.check_password_hash(user['password'], password):
         return jsonify({'error':'Incorrect password'}), 401
     
-    token = create_access_token(identity=str(user['_id']))
+    token = create_access_token(
+    identity=str(user['_id']),
+    expires_delta=timedelta(hours=1)
+)
     return jsonify({
         'message':'Admin login successful',
         'token':token,
