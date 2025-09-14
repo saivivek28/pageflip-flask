@@ -1685,7 +1685,21 @@ def add_to_user_library(user_id):
     book_id = data.get('bookId')
     if not book_id:
         return jsonify({'error': 'bookId is required'}), 400
-    # Upsert item
+    # Validate that the book exists
+    try:
+        b_oid = ObjectId(book_id)
+    except Exception:
+        return jsonify({'error': 'Invalid bookId'}), 400
+    book_exists = books_collection.find_one({'_id': b_oid}) is not None
+    if not book_exists:
+        return jsonify({'error': 'Book not found'}), 404
+
+    # Check if already in library
+    existing = user_library_collection.find_one({'userId': user_id, 'bookId': book_id})
+    if existing:
+        return jsonify({'error': 'Already in library'}), 409
+
+    # Insert new item
     payload = {
         'userId': user_id,
         'bookId': book_id,
@@ -1693,12 +1707,8 @@ def add_to_user_library(user_id):
         'rating': data.get('rating'),
         'dateAdded': data.get('dateAdded') or datetime.utcnow()
     }
-    user_library_collection.update_one(
-        {'userId': user_id, 'bookId': book_id},
-        {'$setOnInsert': payload, '$set': {'isFavorite': payload['isFavorite'], 'rating': payload['rating']}},
-        upsert=True
-    )
-    item = user_library_collection.find_one({'userId': user_id, 'bookId': book_id})
+    result = user_library_collection.insert_one(payload)
+    item = user_library_collection.find_one({'_id': result.inserted_id})
     return jsonify(_enrich_library_items([item])[0]), 201
 
 
